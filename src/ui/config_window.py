@@ -3,12 +3,12 @@ from loguru import logger
 
 from .form import Ui_ConfigWindow
 from src.config import config
-from src.signal import AudioSignal
+from src.signal import AudioClientSignals
 from src.utils import get_device_info, get_host_api_info
 
 
 class ConfigWindow(QWidget, Ui_ConfigWindow):
-    def __init__(self, audio_signal: AudioSignal):
+    def __init__(self, audio_signal: AudioClientSignals):
         super().__init__()
         self.setupUi(self)
         config.add_config_save_callback(self.update_config_data)

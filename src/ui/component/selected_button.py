@@ -8,13 +8,13 @@ class SelectedButton(QPushButton):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self._set_deactivate_style()
-        self._selected = False
+        self._active = False
         self.clicked.connect(self._button_click)
 
     def _button_click(self):
-        self._selected = not self._selected
-        self.button_active.emit(self._selected)
-        if self._selected:
+        self._active = not self._active
+        self.button_active.emit(self._active)
+        if self._active:
             self._set_activate_style()
         else:
             self._set_deactivate_style()
@@ -26,12 +26,12 @@ class SelectedButton(QPushButton):
         self.setStyleSheet("background-color: rgb(189, 189, 189);color: black;")
 
     @property
-    def selected(self) -> bool:
-        return self._selected
+    def active(self) -> bool:
+        return self._active
 
-    @selected.setter
-    def selected(self, value: bool):
-        self._selected = value
+    @active.setter
+    def active(self, value: bool):
+        self._active = value
         if value:
             self._set_activate_style()
         else:

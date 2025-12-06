@@ -1,7 +1,3 @@
-* {
-    color: #ffffff;
-}
-
 #loading_widget {
     background: transparent;
 }
@@ -13,14 +9,12 @@ QLabel#title_label {
 }
 
 QLabel#status_label {
-    color: #6c757d;
     font-size: 12px;
     padding: 5px;
     background: transparent;
 }
 
 QLabel#loading_text {
-    color: #495057;
     font-size: 14px;
     font-weight: 500;
     padding: 8px;

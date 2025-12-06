@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 from struct import pack
-from typing import List
 
 
 class MessageType(str, Enum):
@@ -10,6 +9,7 @@ class MessageType(str, Enum):
     PONG = "pong"
     ERROR = "error"
     TEXT_RECEIVE = "text_receive"
+    VOICE_RECEIVE = "voice_receive"
     MESSAGE = "message"
     DISCONNECT = "disconnect"
 
@@ -38,18 +38,6 @@ class ControlMessage:
             "transmitter": self.transmitter,
             "data": self.data
         }
-
-
-@dataclass
-class ChannelInfo:
-    frequency: int
-    user_count: int = 0
-    is_active: bool = False
-    users: List[str] = None
-
-    def __post_init__(self):
-        if self.users is None:
-            self.users = []
 
 
 @dataclass

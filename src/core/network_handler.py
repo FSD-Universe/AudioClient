@@ -1,23 +1,18 @@
-import json
+from json import dumps, loads
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
 from struct import unpack
 from threading import Thread
 from typing import Optional
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject
 from loguru import logger
 
 from src.model.voice_models import ControlMessage, MessageType, VoicePacket
-from src.signal import Signals
+from src.signal import AudioClientSignals
 
 
 class NetworkHandler(QObject):
-    control_message_received = Signal(ControlMessage)
-    voice_packet_received = Signal(VoicePacket)
-    connection_status_changed = Signal(bool)
-    error_occurred = Signal(str)
-
-    def __init__(self, signals: Signals):
+    def __init__(self, signals: AudioClientSignals):
         super().__init__()
 
         self._tcp_socket: Optional[socket] = None
@@ -28,10 +23,7 @@ class NetworkHandler(QObject):
 
         self._tcp_running = False
         self._udp_running = False
-
-        self._is_connected = False
-        self._cid: Optional[int] = None
-        self._callsign: Optional[str] = None
+        self._connected = False
 
     def _log_message(self, level: str, message: str):
         self._signals.log_message.emit("Network", level, message)
@@ -57,18 +49,18 @@ class NetworkHandler(QObject):
 
             self._tcp_socket.send(f"{jwt_token}\n".encode())
 
-            self._is_connected = True
-            self.connection_status_changed.emit(True)
+            self._connected = True
+            self._signals.socket_connection_state.emit(True)
             logger.info("Connected to voice server")
         except Exception as e:
             logger.error(f"Failed to connect to server: {e}")
             self._log_message("ERROR", f"Failed to connect to server")
-            self.error_occurred.emit(f"连接失败: {e}")
+            self._signals.error_occurred.emit(f"连接失败: {e}")
             self.cleanup()
 
-    def disconnect(self):
+    def disconnect_from_server(self):
         self.cleanup()
-        self.connection_status_changed.emit(False)
+        self._signals.socket_connection_state.emit(False)
         self._log_message("INFO", f"Disconnected from voice server")
         logger.info("Disconnected from voice server")
 
@@ -76,11 +68,11 @@ class NetworkHandler(QObject):
         if not self._tcp_socket:
             return
         try:
-            data = json.dumps(message.to_dict()).encode()
+            data = dumps(message.to_dict()).encode()
             self._tcp_socket.send(data + b'\n')
         except Exception as e:
             logger.error(f"Failed to send control message: {e}")
-            self.error_occurred.emit(f"发送消息失败: {e}")
+            self._signals.error_occurred.emit(f"发送消息失败: {e}")
 
     def send_voice_packet(self, packet: bytes):
         if not self._udp_socket or not self._server_address:
@@ -103,7 +95,7 @@ class NetworkHandler(QObject):
                 if self._tcp_running:
                     logger.error(f"TCP receive error: {e}")
                 break
-        self.disconnect()
+        self.disconnect_from_server()
 
     def _udp_receive_loop(self):
         while self._udp_running and self._udp_socket:
@@ -117,7 +109,7 @@ class NetworkHandler(QObject):
 
     def _process_control_message(self, data: str):
         try:
-            message_dict = json.loads(data)
+            message_dict = loads(data)
             message = ControlMessage(
                 type=MessageType(message_dict.get('type')),
                 cid=message_dict.get('cid', 0),
@@ -125,7 +117,7 @@ class NetworkHandler(QObject):
                 transmitter=message_dict.get('transmitter', 0),
                 data=message_dict.get('data', '')
             )
-            self.control_message_received.emit(message)
+            self._signals.control_message_received.emit(message)
         except Exception as e:
             logger.error(f"Failed to process control message: {e}")
 
@@ -144,14 +136,14 @@ class NetworkHandler(QObject):
             logger.trace(
                 f"Received from {callsign} (CID={cid}, Frequency={frequency}), audio length: {len(audio_data)}")
             packet = VoicePacket(cid, transmitter, frequency, callsign, audio_data)
-            self.voice_packet_received.emit(packet)
+            self._signals.voice_data_received.emit(packet)
         except Exception as e:
             logger.error(f"Failed to process voice packet: {e}")
 
     def cleanup(self):
         self._tcp_running = False
         self._udp_running = False
-        self._is_connected = False
+        self._connected = False
 
         if self._tcp_socket:
             try:

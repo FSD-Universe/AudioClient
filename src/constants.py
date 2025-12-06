@@ -16,5 +16,6 @@ opus_default_sample_rate: int = 48000
 opus_default_bitrate: int = int(opus_default_sample_rate / 2)
 default_sample_rate: int = 44100
 default_channels: int = 1
-default_frame_time: int = 10  # ms
+default_frame_time: int = 20  # ms
+default_frame_time_s: float = default_frame_time / 1000  # s
 default_frame_size: int = int(opus_default_sample_rate / (1000 / default_frame_time))

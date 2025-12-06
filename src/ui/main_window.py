@@ -1,3 +1,5 @@
+from asyncio import get_running_loop, new_event_loop, set_event_loop
+from threading import Thread
 from typing import Optional
 
 from PySide6.QtGui import QScreen
@@ -16,12 +18,13 @@ from src.model import ConnectionState
 from src.config import config
 from src.thread import KeyboardListenerThread, MouseListenerThread
 from src.core import VoiceClient
-from src.signal import Signals, MouseSignals, KeyBoardSignals, AudioSignal
+from src.signal import AudioClientSignals, Signals, MouseSignals, KeyBoardSignals
+from ..core.client_info import ClientInfo
+from ..core.websocket_broadcast_server import WebSocketBroadcastServer
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    def __init__(self, signals: Signals, mouse_signals: MouseSignals, keyboard_signals: KeyBoardSignals,
-                 audio_signal: AudioSignal) -> None:
+    def __init__(self, signals: Signals, mouse_signals: MouseSignals, keyboard_signals: KeyBoardSignals) -> None:
         super().__init__()
         logger.trace("Creating main window")
 
@@ -44,10 +47,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.windows.addWidget(self.loading)
         self.windows.setCurrentIndex(0)
 
+        self.websocket = WebSocketBroadcastServer()
+        signals.broadcast_message.connect(lambda msg: self.websocket.broadcast(msg))
+        Thread(target=self.start_websocket, daemon=True).start()
+
         self.signals = signals
         self.mouse_signals = mouse_signals
         self.keyboard_signals = keyboard_signals
-        self.audio_signal = audio_signal
 
         config.add_config_save_callback(self.config_update)
 
@@ -57,6 +63,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         signals.show_config_windows.connect(self.show_config_window)
         signals.logout_request.connect(self.logout_request)
         signals.resize_window.connect(self.resize_window)
+
+    def start_websocket(self):
+        try:
+            loop = get_running_loop()
+        except RuntimeError:
+            loop = new_event_loop()
+            set_event_loop(loop)
+        loop.run_until_complete(self.websocket.start())
 
     def logout_request(self) -> None:
         self.windows.setCurrentIndex(1)
@@ -70,7 +84,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def initialize_complete(self) -> None:
         self.setMinimumSize(0, 0)
 
-        self.voice_client = VoiceClient(self.signals, self.audio_signal)
+        client_info = ClientInfo()
+        signals = AudioClientSignals()
+        self.voice_client = VoiceClient(client_info, signals)
 
         self.login = LoginWindow(self.voice_client, self.signals)
         self.login.setObjectName(u"login")
@@ -80,7 +96,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.connect.setObjectName(u"connect")
         self.windows.addWidget(self.connect)
 
-        self.config = ConfigWindow(self.audio_signal)
+        self.config = ConfigWindow(signals)
         self.config.setObjectName(u"config")
 
         self.signals.login_success.connect(self.login_success)
@@ -101,8 +117,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.keyboard_signals.key_pressed.connect(self.ptt_button.key_pressed)
         self.mouse_signals.mouse_released.connect(self.ptt_button.key_released)
         self.keyboard_signals.key_released.connect(self.ptt_button.key_released)
-        self.ptt_button.ptt_pressed.connect(lambda x: self.audio_signal.ptt_status_change.emit(x))
-        self.voice_client.connection_state_changed.connect(self.handle_connect_status_change)
+        self.ptt_button.ptt_pressed.connect(lambda x: signals.ptt_status_change.emit(x))
+        signals.connection_state_changed.connect(self.handle_connect_status_change)
 
         self.menubar.setVisible(True)
         self.resize(450, 450)

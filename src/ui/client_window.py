@@ -29,15 +29,15 @@ class ClientWindow(QWidget, Ui_ClientWindow):
         self.overwrite_com2_freq = 0
 
     def com1_freq_tx_clicked(self):
-        self.button_com2_tx.selected = False
-        if self.button_com1_tx.selected:
+        self.button_com2_tx.active = False
+        if self.button_com1_tx.active:
             self.voice_client.switch_frequency(self.com1_freq, 0)
         else:
             self.voice_client.clear_frequency()
 
     def com2_freq_tx_clicked(self):
-        self.button_com1_tx.selected = False
-        if self.button_com2_tx.selected:
+        self.button_com1_tx.active = False
+        if self.button_com2_tx.active:
             self.voice_client.switch_frequency(self.com2_freq, 1)
         else:
             self.voice_client.clear_frequency()
@@ -71,7 +71,7 @@ class ClientWindow(QWidget, Ui_ClientWindow):
                 self.voice_client.set_transmitter_receive_flag(self.com1_freq, False)
             self.voice_client.set_transmitter_receive_flag(com1_freq, self.com1_rx | com1_rx)
             self.label_com1_freq.setText(f"{com1_freq / 1000:.3f}")
-            if self.button_com1_tx.selected:
+            if self.button_com1_tx.active:
                 self.voice_client.switch_frequency(com1_freq, 0)
             self.com1_freq = com1_freq
 
@@ -80,12 +80,12 @@ class ClientWindow(QWidget, Ui_ClientWindow):
                 self.voice_client.set_transmitter_receive_flag(self.com2_freq, False)
             self.voice_client.set_transmitter_receive_flag(com2_freq, self.com2_rx | com2_rx)
             self.label_com2_freq.setText(f"{com2_freq / 1000:.3f}")
-            if self.button_com2_tx.selected:
+            if self.button_com2_tx.active:
                 self.voice_client.switch_frequency(com2_freq, 1)
             self.com2_freq = com2_freq
 
-        self.button_com1_rx.selected = self.com1_rx | com1_rx
+        self.button_com1_rx.active = self.com1_rx | com1_rx
         self.com1_rx = com1_rx
 
-        self.button_com2_rx.selected = self.com2_rx | com2_rx
+        self.button_com2_rx.active = self.com2_rx | com2_rx
         self.com2_rx = com2_rx

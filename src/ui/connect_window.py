@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import getcwd
 from os.path import join
+from sys import platform
 from threading import Thread
 from time import sleep, time
 
@@ -10,13 +11,13 @@ from loguru import logger
 
 from src.config import config
 from src.core import VoiceClient
-from src.model import ConnectionState, VoicePacket
+from src.model import ConnectionState, RxBegin, RxEnd, VoiceConnectedState, VoicePacket, WebSocketMessage
 from src.signal import Signals
 from src.utils import get_line_edit_data
 from .client_window import ClientWindow
 from .controller_window import ControllerWindow
 from .form import Ui_ConnectWindow
-from ..constants import default_frame_time
+from ..constants import default_frame_time, default_frame_time_s
 from ..core.fsuipc_client import FSUIPCClient
 
 
@@ -29,22 +30,31 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         self.setupUi(self)
 
         try:
-            self.fsuipc_client = FSUIPCClient(join(getcwd(), "libfsuipc.dll"))
+            if platform == 'win32':
+                lib_location = join(getcwd(), "lib/libfsuipc.dll")
+            elif platform == 'darwin':
+                lib_location = join(getcwd(), "lib/libfsuipc.dylib")
+            elif platform == 'linux':
+                lib_location = join(getcwd(), "lib/libfsuipc.so")
+            else:
+                raise OSError("unknown platform")
+
+            self.fsuipc_client = FSUIPCClient(lib_location)
         except FileNotFoundError:
-            logger.error("Cannot find libfsuipc.dll")
-            QMessageBox.critical(self, "Cannot load libfsuipc.dll",
-                                 f"Cannot found libfsuipc.dll, download it and put it under {getcwd()}")
+            logger.error("Cannot find libfsuipc")
+            QMessageBox.critical(self, "Cannot load libfsuipc",
+                                 f"Cannot found libfsuipc, download it and put it under {join(getcwd(), 'lib')}")
             exit(1)
         except Exception as e:
-            logger.error(f"Fail to load libfsuipc.dll, {e}")
-            QMessageBox.critical(self, "Cannot load libfsuipc.dll",
-                                 "Unknown error occurred while loading libfsuipc.dll")
+            logger.error(f"Fail to load libfsuipc, {e}")
+            QMessageBox.critical(self, "Cannot load libfsuipc",
+                                 "Unknown error occurred while loading libfsuipc")
             exit(1)
 
         self.voice_client = voice_client
         self.button_connect.clicked.connect(self.connect_to_server)
-        self.voice_client.error_occurred.connect(self.handle_connect_error)
-        self.voice_client.connection_state_changed.connect(self.connect_state_changed)
+        self.voice_client.signals.error_occurred.connect(self.handle_connect_error)
+        self.voice_client.signals.connection_state_changed.connect(self.connect_state_changed)
         self.controller_window = ControllerWindow(voice_client)
         self.client_window = ClientWindow(voice_client, self.fsuipc_client)
         self.windows.addWidget(QWidget())
@@ -56,28 +66,36 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         self.fsuipc_client_connect_fail.connect(self.fsuipc_connection_fail)
         signals.log_message.connect(self.log_message)
 
-        voice_client.voice_data_sent.connect(self.tx_send)
-        voice_client.voice_data_received.connect(self.rx_receive)
+        self.voice_client.signals.voice_data_sent.connect(self.tx_send)
+        self.voice_client.signals.voice_data_received.connect(self.rx_receive)
         self.last_data_receive = 0
         self.receive_timeout_timer = QTimer()
         self.receive_timeout_timer.timeout.connect(self.check_rx_timeout)
-        self.receive_timeout_timer.start(50)
+        self.receive_timeout_timer.setInterval(default_frame_time // 4)
+        self.receive_timeout_timer.start()
         self.last_data_send = 0
         self.send_timeout_timer = QTimer()
         self.send_timeout_timer.timeout.connect(self.check_tx_timeout)
-        self.send_timeout_timer.start(50)
+        self.send_timeout_timer.setInterval(default_frame_time // 4)
+        self.send_timeout_timer.start()
 
         self._connected = False
         self.signals = signals
 
     def check_rx_timeout(self):
         if self.button_rx.is_active:
-            if time() - self.last_data_receive > (default_frame_time / 1000):
+            diff = time() - self.last_data_receive
+            if diff > default_frame_time_s * 4:
                 self.button_rx.set_active(False)
+                self.signals.broadcast_message.emit(WebSocketMessage(RxEnd(
+                    [item for item in self.voice_client.receiving.keys()],
+                    self.label_rx_callsign_v.text(),
+                    int(float(self.label_rx_freq_v.text()) * 1000000)
+                )))
 
     def check_tx_timeout(self):
         if self.button_tx.is_active:
-            if time() - self.last_data_send > (default_frame_time / 1000):
+            if time() - self.last_data_send > default_frame_time_s:
                 self.button_tx.set_active(False)
 
     def tx_send(self) -> None:
@@ -91,22 +109,26 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         if self.voice_client.connection_state != ConnectionState.READY:
             self.button_rx.set_active(False)
             return
+        if not self.button_rx.is_active:
+            self.signals.broadcast_message.emit(
+                WebSocketMessage(RxBegin([item for item in self.voice_client.receiving.keys()], voice.callsign,
+                                         voice.frequency * 1000)))
         self.last_data_receive = time()
         self.button_rx.set_active(True)
         self.label_rx_callsign_v.setText(voice.callsign)
         self.label_rx_freq_v.setText(f"{voice.frequency / 1000:.3f}")
 
     def login_success(self):
-        if self.voice_client.cid is None:
+        if self.voice_client.client_info.cid is None:
             return
-        self.label_cid_v.setText(f"{self.voice_client.cid:04}")
+        self.label_cid_v.setText(f"{self.voice_client.client_info.cid:04}")
         self.line_edit_address.setText(config.server_host)
         self.line_edit_tcp_port.setText(str(config.server_tcp_port))
         self.line_edit_udp_port.setText(str(config.server_udp_port))
 
     def connect_to_server(self):
         if self._connected:
-            self.voice_client.disconnect()
+            self.voice_client.disconnect_from_server()
             self.client_window.stop()
             self._connected = False
             return
@@ -137,13 +159,15 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         if state == ConnectionState.READY:
             self.button_connect.setText("断开连接")
             self._connected = True
-            self.label_callsign_v.setText(self.voice_client.callsign)
-            if self.voice_client.is_atc:
+            self.signals.broadcast_message.emit(WebSocketMessage(VoiceConnectedState(True)))
+            self.label_callsign_v.setText(self.voice_client.client_info.callsign)
+            if self.voice_client.client_info.is_atc:
                 self.windows.setCurrentIndex(1)
             else:
                 Thread(target=self.connect_to_simulator, daemon=True).start()
         elif state == ConnectionState.DISCONNECTED:
             self._connected = False
+            self.signals.broadcast_message.emit(WebSocketMessage(VoiceConnectedState(False)))
             self.button_connect.setText("连接服务器")
             self.label_callsign_v.setText("----")
             self.windows.setCurrentIndex(0)

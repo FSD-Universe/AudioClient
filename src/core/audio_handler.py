@@ -7,13 +7,13 @@ from pyaudio import PyAudio, Stream, paContinue, paFloat32, paInt16
 from soxr import resample
 
 from src.constants import default_channels, default_frame_size, default_sample_rate, opus_default_sample_rate
-from src.signal.audio_signal import AudioSignal
+from src.signal import AudioClientSignals
 from .codecs.opus_decoder import OpusDecoder
 from .codecs.opus_encoder import OpusEncoder
 
 
 class AudioHandler:
-    def __init__(self, audio_signal: AudioSignal):
+    def __init__(self, audio_signal: AudioClientSignals):
         self._input_sample_rate = default_sample_rate
         self._output_sample_rate = default_sample_rate
 
@@ -38,14 +38,17 @@ class AudioHandler:
         self._input_device: Optional[int] = None
         self._output_device: Optional[int] = None
 
-        self._on_encoded_audio: Optional[Callable] = None
+        self.on_encoded_audio: Optional[Callable] = None
 
         self.audio_signal = audio_signal
-        self.audio_signal.ptt_status_change.connect(self.set_ptt_state)
-        self.audio_signal.audio_input_device_change.connect(self.input_device_change)
-        self.audio_signal.audio_output_device_change.connect(self.output_device_change)
+        self.audio_signal.ptt_status_change.connect(self._ptt_status_change)
+        self.audio_signal.audio_input_device_change.connect(self._input_device_change)
+        self.audio_signal.audio_output_device_change.connect(self._output_device_change)
 
-    def input_device_change(self, index: int):
+    def _ptt_status_change(self, status: bool):
+        self._ptt_active = status
+
+    def _input_device_change(self, index: int):
         if index == -1:
             self._input_device = None
         else:
@@ -57,7 +60,7 @@ class AudioHandler:
             self.stop_recording()
             self.start_recording()
 
-    def output_device_change(self, index: int):
+    def _output_device_change(self, index: int):
         if index == -1:
             self._output_device = None
         else:
@@ -124,7 +127,7 @@ class AudioHandler:
         logger.info("Stopped audio playback")
 
     def _input_callback(self, in_data, _, __, ___):
-        if self._ptt_active and self._on_encoded_audio:
+        if self._ptt_active and self.on_encoded_audio:
             audio_data = frombuffer(in_data, dtype=int16)
             resampled_audio = resample(audio_data, self._input_sample_rate, opus_default_sample_rate)
             if len(resampled_audio) == 0:
@@ -132,7 +135,7 @@ class AudioHandler:
                 return None, paContinue
             encoded_data = self._encoder.encode(resampled_audio)
             if encoded_data:
-                self._on_encoded_audio(encoded_data)
+                self.on_encoded_audio(encoded_data)
         return None, paContinue
 
     def _output_callback(self, _, frame_count: int, __, ___):
@@ -156,19 +159,16 @@ class AudioHandler:
         except Full:
             logger.warning("Output queue full, dropping audio packet")
 
-    def set_ptt_state(self, active: bool):
-        self._ptt_active = active
-        logger.debug(f"PTT state: {active}")
+    @property
+    def ptt(self) -> bool:
+        return self._ptt_active
+
+    @ptt.setter
+    def ptt(self, value: bool):
+        self._ptt_active = value
+        logger.trace(f"Set PTT state: {value}")
 
     def cleanup(self):
         self.stop_recording()
         self.stop_playback()
         self._audio.terminate()
-
-    @property
-    def on_encoded_audio(self) -> Callable[[bytes], None]:
-        return self._on_encoded_audio
-
-    @on_encoded_audio.setter
-    def on_encoded_audio(self, callback: Callable[[bytes], None]):
-        self._on_encoded_audio = callback
