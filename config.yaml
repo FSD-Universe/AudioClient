@@ -1,7 +1,7 @@
 account:
   password: '123456'
   remember_me: true
-  username: '111'
+  username: '2352'
 audio:
   api_driver: "\u81EA\u52A8"
   input_device: "\u9ED8\u8BA4"

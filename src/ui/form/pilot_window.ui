@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>790</width>
-    <height>413</height>
+    <width>512</width>
+    <height>348</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
   </property>
   <property name="font">
    <font>
@@ -20,6 +26,59 @@
    <string>PilotClient</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
+   <item row="0" column="1" rowspan="3">
+    <widget class="QGroupBox" name="group_controllers">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="font">
+      <font>
+       <family>Leelawadee UI</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="title">
+      <string>在线管制员</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QVBoxLayout" name="controller_list"/>
+      </item>
+      <item>
+       <spacer name="spacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
    <item row="0" column="0">
     <widget class="QGroupBox" name="group_com">
      <property name="font">
@@ -34,21 +93,8 @@
      <layout class="QGridLayout" name="gridLayout_3">
       <item row="0" column="0">
        <layout class="QGridLayout" name="layout_coms">
-        <item row="1" column="2">
-         <widget class="SelectedButton" name="button_com2_tx">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>TX</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="SelectedButton" name="button_com1_rx">
+        <item row="1" column="3">
+         <widget class="SelectedButton" name="button_com2_rx">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -61,21 +107,41 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLabel" name="label_com2_freq">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>Leelawadee UI</family>
-            <pointsize>12</pointsize>
-           </font>
+         <widget class="QLineEdit" name="label_com2_freq">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="text">
            <string>---.---</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="label_com1_freq">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>---.---</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="SelectedButton" name="button_com2_tx">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>TX</string>
           </property>
          </widget>
         </item>
@@ -104,19 +170,6 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="SelectedButton" name="button_com1_tx">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>TX</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_com1">
           <property name="sizePolicy">
@@ -142,27 +195,21 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_com1_freq">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>Leelawadee UI</family>
-            <pointsize>12</pointsize>
-           </font>
+        <item row="0" column="2">
+         <widget class="SelectedButton" name="button_com1_tx">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="text">
-           <string>---.---</string>
+           <string>TX</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="3">
-         <widget class="SelectedButton" name="button_com2_rx">
+        <item row="0" column="3">
+         <widget class="SelectedButton" name="button_com1_rx">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -176,239 +223,118 @@
         </item>
        </layout>
       </item>
-      <item row="0" column="1">
-       <spacer name="spacer_1">
-        <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="1" rowspan="3">
-    <widget class="QGroupBox" name="group_controllers">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="font">
-      <font>
-       <family>Leelawadee UI</family>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="title">
-      <string>在线管制员</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <layout class="QHBoxLayout" name="layout_unicom">
-          <item>
-           <widget class="QLabel" name="label_unicom">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>UNICOM</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_unicom_freq">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>122.800</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="SelectedButton" name="button_unicom_com1">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>COM1</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="SelectedButton" name="button_unicom_com2">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>COM2</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="layout_emer">
-          <item>
-           <widget class="QLabel" name="label_emer">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>EMER</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="label_emer_freq">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>121.500</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="SelectedButton" name="button_emer_com1">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>COM1</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="SelectedButton" name="button_emer_com2">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>COM2</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <spacer name="spacer_2">
-        <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
      </layout>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QGroupBox" name="group_message">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="font">
-      <font>
-       <family>Leelawadee UI</family>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
+    <widget class="QGroupBox" name="group_info">
      <property name="title">
-      <string>文字消息</string>
+      <string>通讯数据</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_5">
-      <item row="0" column="0">
-       <widget class="QTabWidget" name="channel_messages">
-        <property name="currentIndex">
-         <number>0</number>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="1" column="1">
+       <widget class="QLabel" name="com1_standby_v">
+        <property name="text">
+         <string>---.---</string>
         </property>
-        <widget class="QWidget" name="unicom">
-         <attribute name="title">
-          <string>UNICOM</string>
-         </attribute>
-        </widget>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="com2_active">
+        <property name="text">
+         <string>COM2</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="com1_active_v">
+        <property name="text">
+         <string>---.---</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="com2_standby">
+        <property name="text">
+         <string>COM2 Standby</string>
+        </property>
        </widget>
       </item>
       <item row="1" column="0">
-       <layout class="QHBoxLayout" name="layout_send">
-        <item>
-         <widget class="QLabel" name="label_unicom_2">
-          <property name="text">
-           <string>UNICOM</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="line_edit_message"/>
-        </item>
-       </layout>
+       <widget class="QLabel" name="com1_standby">
+        <property name="text">
+         <string>COM1 Standby</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QCheckBox" name="sync_receive_flag">
+        <property name="text">
+         <string>同步机模接收标志位</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="com1_receive">
+        <property name="text">
+         <string>COM1 Receive</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="com2_standby_v">
+        <property name="text">
+         <string>---.---</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="2">
+       <widget class="QCheckBox" name="sync_frequency">
+        <property name="text">
+         <string>同步机模COM频率</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="com1_active">
+        <property name="text">
+         <string>COM1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="com2_active_v">
+        <property name="text">
+         <string>---.---</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="com2_receive">
+        <property name="text">
+         <string>COM2 Receive</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="com2_receive_v">
+        <property name="text">
+         <string>否</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="com1_receive_v">
+        <property name="text">
+         <string>否</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

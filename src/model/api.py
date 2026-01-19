@@ -1,7 +1,7 @@
 #  Copyright (c) 2026 Half_nothing
 #  SPDX-License-Identifier: MIT
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Generic, Mapping, Optional, TypeVar
 
 from pydantic import BaseModel
 
@@ -46,3 +46,52 @@ class UserLoginRequest(BaseModel):
 
 class UserLoginResponse(ApiResponse[UserLoginModel]):
     pass
+
+
+class OnlinePilotModel(BaseModel):
+    cid: int
+    callsign: str
+    real_name: str
+    latitude: float
+    longitude: float
+    transponder: str
+    pitch: float
+    bank: float
+    heading: float
+    on_ground: bool
+    voice_range: float
+    altitude: int
+    ground_speed: int
+    flight_plan: Optional[Mapping[str, str | int | bool]]
+    logon_time: str
+
+
+class OnlineControllerModel(BaseModel):
+    cid: int
+    callsign: str
+    real_name: str
+    latitude: float
+    longitude: float
+    rating: int
+    facility: int
+    frequency: int
+    range: int
+    voice_range: int
+    offline_time: str
+    is_break: bool
+    atc_info: list[str]
+    logon_time: datetime
+
+
+class OnlineGeneralModel(BaseModel):
+    version: int
+    generate_time: datetime
+    connected_clients: int
+    online_pilot: int
+    online_controller: int
+
+
+class OnlineClientsModel(BaseModel):
+    general: OnlineGeneralModel
+    pilots: list[OnlinePilotModel]
+    controllers: list[OnlineControllerModel]

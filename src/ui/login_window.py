@@ -66,7 +66,7 @@ class LoginWindow(QWidget, Ui_LoginWindow):
                 QMessageBox.critical(self, "登陆失败", "发生未知错误")
             return
 
-        data = UserLoginResponse.model_validate(response.json()).data
+        data = UserLoginResponse.model_validate_json(response.content).data
 
         self.voice_client.client_info.cid = data.user.cid
         self.voice_client.client_info.jwt_token = data.token

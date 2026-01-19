@@ -28,15 +28,15 @@ class ControllerWindow(QWidget, Ui_ControllerWindow):
             lambda x: self.label_current_freq_v.setText(f"{x / 1000:.3f}" if x != 0 else "---.---")
         )
         self._frequency = -1
-        self.line_edit_freq.textEdited.connect(self.decode_frequency)
+        self.line_edit_freq.editingFinished.connect(self.decode_frequency)
 
         self._main_transmitter = Transmitter(0, 0)
         self._unicom_transmitter = Transmitter(122800, 1)
         self._emer_transmitter = Transmitter(121500, 2)
         self._custom_transmitter = Transmitter(0, 3)
 
-    def decode_frequency(self, text: str):
-        frequency = int(float(text) * 1000)
+    def decode_frequency(self):
+        frequency = int(float(self.line_edit_freq.text()) * 1000)
         if frequency < 3000 or frequency > 200000:
             show_error(self.line_edit_freq)
             self._frequency = -1
