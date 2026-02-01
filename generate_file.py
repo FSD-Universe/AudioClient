@@ -1,11 +1,32 @@
 #  Copyright (c) 2026 Half_nothing
 #  SPDX-License-Identifier: MIT
+from json import dump, load
 from os import system
 from pathlib import Path
+
+from hashlib import md5
+
+
+def calculate_file_md5(file_path: Path, *, encoding: str = 'utf8') -> str:
+    if not file_path.exists():
+        raise FileNotFoundError
+    with open(file_path, "r", encoding=encoding) as f:
+        data = f.read()
+    return md5(data.encode(encoding)).hexdigest()
 
 
 def main() -> None:
     root = Path.cwd()
+
+    cache_file = root / ".cache"
+
+    if not cache_file.exists():
+        cache_file.write_text("{}", encoding="utf-8")
+
+    f = open(cache_file, "r", encoding="utf-8")
+    cache: dict[str, str] = load(f)
+    f.close()
+
     scripts = root / ".venv" / "Scripts"
     if not scripts.exists():
         print("Please run this script in the root directory of the project")
@@ -44,12 +65,20 @@ def main() -> None:
 
     for ui_file in ui_file_folder.glob("*.ui"):
         output_path = output_folder / (ui_file.stem + ".py")
-        print(f"Processing {ui_file.name}")
-        system(f"{uic_file} {ui_file} -o {output_path}")
+        new_md5 = calculate_file_md5(ui_file)
+        if str(ui_file) not in cache or cache[str(ui_file)] != new_md5:
+            print(f"Processing {ui_file.name}")
+            system(f"{uic_file} {ui_file} -o {output_path}")
+            cache[str(ui_file)] = new_md5
+        else:
+            print(f"Using cached {ui_file.name}")
 
     print("Processing ui files completed")
     print("=" * 50)
     print("Generate file completed")
+
+    with open(cache_file, "w", encoding="utf8") as f:
+        dump(cache, f)
 
 
 if __name__ == '__main__':

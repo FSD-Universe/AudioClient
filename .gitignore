@@ -1,13 +1,24 @@
-.py[cod]
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
-.pdm-python
+# python virtual environment
 .venv/
+.pdm-python
+
+# ide confirguation file
 .idea/
-logs/
-/config/
-dist/
+.vscode/
+
+# build cache
 build/
-test.py
+dist/
+
+# runtime file
+logs/
+config.yaml
+
+# self-test file
+test*
+.cache
+
+# generation file
+*.pyc
+__pycache__/
+*generate*/
