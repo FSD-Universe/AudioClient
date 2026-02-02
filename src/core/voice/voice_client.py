@@ -18,11 +18,11 @@ from .transmitter import Transmitter
 
 # 语音客户端
 class VoiceClient(QObject):
-    def __init__(self, client_info: ClientInfo, signals: AudioClientSignals):
+    def __init__(self, signals: AudioClientSignals):
         super().__init__()
 
         self.signals = signals
-        self.client_info = client_info
+        self.client_info = ClientInfo()
         self.receiving: dict[str, float] = {}
 
         self._connection_state = ConnectionState.DISCONNECTED
@@ -96,7 +96,6 @@ class VoiceClient(QObject):
         if transmitter.frequency == 0:
             return
         self.update_transmitter(transmitter)
-        self._init_transmitters(transmitter)
 
     def remove_transmitter(self, transmitter_id: int):
         del self._transmitters[transmitter_id]
@@ -146,14 +145,6 @@ class VoiceClient(QObject):
         if self._connection_state != state:
             self._connection_state = state
             self.signals.connection_state_changed.emit(state)
-
-    def _init_transmitters(self, transmitter: Transmitter):
-        packet = VoicePacketBuilder.build_packet(self.client_info.cid,
-                                                 transmitter.id,
-                                                 transmitter.frequency,
-                                                 self.client_info.callsign,
-                                                 b"")
-        self._network.send_voice_packet(packet)
 
     def _send_voice_data(self, encoded_data: bytes):
         if not self.client_ready or self._current_transmitter == -1:

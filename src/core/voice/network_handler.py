@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, QTimer
 from loguru import logger
 from pydantic import ValidationError
 
-from src.model import ClientInfo, ControlMessage, MessageType, VoicePacket
+from src.model import ClientInfo, ControlMessage, MessageType, VoicePacket, VoicePacketBuilder
 from src.signal import AudioClientSignals
 
 
@@ -35,6 +35,9 @@ class NetworkHandler(QObject):
         self._heartbeat_timer.timeout.connect(self._heartbeat_send_handler)
         self._heartbeat_timer.setInterval(15000)
 
+        self._empty_voice_packet = VoicePacketBuilder.build_packet(client_info.cid, 0, 0,
+                                                                   client_info.callsign, b"")
+
     def _log_message(self, level: str, message: str):
         self._signals.log_message.emit("Network", level, message)
 
@@ -47,6 +50,7 @@ class NetworkHandler(QObject):
         message = ControlMessage(type=MessageType.PING, cid=self._client_info.cid,
                                  callsign=self._client_info.callsign, data=str(int(time())))
         self.send_control_message(message)
+        self.send_voice_packet(self._empty_voice_packet)
 
     # 连接到服务器
     def connect_to_server(self, host: str, tcp_port: int, udp_port: int, jwt_token: str):
@@ -73,11 +77,12 @@ class NetworkHandler(QObject):
             self._tcp_socket.send(f"{jwt_token}\n".encode())
             self._connected = True
             self._signals.socket_connection_state.emit(True)
-            logger.info("Connected to voice server")
+            self._log_message("INFO", "Connected to voice server")
             self._show_log_message("INFO", "连接服务器成功")
+            self._empty_voice_packet = VoicePacketBuilder.build_packet(self._client_info.cid, 0, 0,
+                                                                       self._client_info.callsign, b"")
             self._heartbeat_timer.start()
         except Exception as e:
-            logger.error(f"Failed to connect to server: {e}")
             self._log_message("ERROR", f"Failed to connect to server")
             self._signals.error_occurred.emit(f"连接失败: {e}")
             self.cleanup()
@@ -89,7 +94,6 @@ class NetworkHandler(QObject):
         self.cleanup()
         self._signals.socket_connection_state.emit(False)
         self._log_message("INFO", f"Disconnected from voice server")
-        logger.info("Disconnected from voice server")
 
     # 发送信令消息
     def send_control_message(self, message: ControlMessage):
@@ -98,11 +102,11 @@ class NetworkHandler(QObject):
         try:
             self._tcp_socket.send(message.model_dump_json().encode(encoding="utf-8") + b'\n')
         except UnicodeEncodeError as e:
-            logger.error(f"Failed to send control message, encoding error: {e}")
+            self._log_message("ERROR", f"Failed to send control message, encoding error: {e}")
         except WindowsError as e:
-            logger.error(f"Failed to send control message, windows error: {e}")
+            self._log_message("ERROR", f"Failed to send control message, windows error: {e}")
         except Exception as e:
-            logger.error(f"Failed to send control message, unknown error: {e}")
+            self._log_message("ERROR", f"Failed to send control message, unknown error: {e}")
 
     # 发送音频数据
     def send_voice_packet(self, packet: bytes):
@@ -112,7 +116,7 @@ class NetworkHandler(QObject):
         try:
             self._udp_socket.sendto(packet, self._server_address)
         except Exception as e:
-            logger.error(f"Failed to send voice packet: {e}")
+            self._log_message("ERROR", f"Failed to send voice packet: {e}")
 
     # 接收信令
     def _tcp_receive_loop(self):
@@ -122,17 +126,18 @@ class NetworkHandler(QObject):
                 data = self._tcp_socket.recv(4096)
                 if not data:
                     break
-                logger.trace(f"TCP > receive from server: {data.decode('utf-8', 'ignore').replace('\n', '')}")
+                self._log_message("TRACE",
+                                  f"TCP > receive from server: {data.decode('utf-8', 'ignore').replace('\n', '')}")
                 data_buffer += data
                 if b'\n' in data_buffer:
                     data, data_buffer = data_buffer.split(b'\n', 1)
                     self._process_control_message(data)
                 elif len(data_buffer) > 4096:
-                    logger.error("TCP > receive buffer overflow")
+                    self._log_message("ERROR", "TCP > receive buffer overflow")
                     data_buffer = b""
             except Exception as e:
                 if self._tcp_running:
-                    logger.error(f"TCP > receive error: {e}")
+                    self._log_message("ERROR", f"TCP > receive error: {e}")
                 break
         self.disconnect_from_server()
 
@@ -144,7 +149,7 @@ class NetworkHandler(QObject):
                 self._process_voice_packet(data)
             except Exception as e:
                 if self._udp_running:
-                    logger.error(f"UDP receive error: {e}")
+                    self._log_message("ERROR", f"UDP receive error: {e}")
                 break
 
     # 处理信令
