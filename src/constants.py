@@ -1,13 +1,12 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
 
-from os import getcwd
 from pathlib import Path
 
 from .utils.version import Version
 
 config_version: Version = Version([1, 0, 0])
-config_file_path: Path = Path(getcwd()) / "config.yaml"
+config_file: Path = Path.cwd() / "config.yaml"
 app_version: Version = Version([0, 2, 0])
 app_name: str = "AudioClient"
 app_title: str = f"{app_name} v{app_version.version}"

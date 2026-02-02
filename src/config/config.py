@@ -7,7 +7,7 @@ from loguru import logger
 from pydantic import BaseModel
 from yaml import safe_load, safe_dump
 
-from src.constants import config_file_path, config_version
+from src.constants import config_file, config_version
 from src.model import VersionType
 from src.utils.version import Version
 
@@ -49,8 +49,13 @@ class Config(BaseModel):
 
     @classmethod
     def load_config(cls) -> 'Config':
-        config_file_path.touch(mode=0o644, exist_ok=True)
-        f = open(config_file_path, "r", encoding="utf-8")
+        if not config_file.exists():
+            config_file.touch(mode=0o644)
+            c = Config()
+            with open(config_file, "w", encoding="utf-8") as f:
+                safe_dump(c.model_dump(), f)
+            return c
+        f = open(config_file, "r", encoding="utf-8")
         c = Config.model_validate(safe_load(f))
         f.close()
         match config_version.check_version(Version(c.version)):
@@ -81,9 +86,10 @@ class ConfigManager:
         result_list = [callback() for callback in self._save_callbacks]
         if not all(result_list):
             logger.error("Some config save callback failed, rejecting save")
-            logger.debug(f"Failed callback list: {[callback for callback, result in zip(self._save_callbacks, result_list) if not result]}")
+            logger.debug(
+                f"Failed callback list: {[callback for callback, result in zip(self._save_callbacks, result_list) if not result]}")
             return
-        with open(config_file_path, "w", encoding="utf-8") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             safe_dump(self.config.model_dump(), f)
 
 
