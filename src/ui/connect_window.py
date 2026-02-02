@@ -1,11 +1,11 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
-
+from asyncio import get_running_loop, new_event_loop, set_event_loop
 from datetime import datetime
 from pathlib import Path
 from sys import platform
 from threading import Thread
-from time import sleep, time
+from time import time
 
 from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import QMessageBox, QWidget
@@ -13,7 +13,7 @@ from loguru import logger
 
 from src.config import config
 from src.constants import default_frame_time, default_frame_time_s
-from src.core import FSUIPCClient, VoiceClient
+from src.core import FSUIPCClient, VoiceClient, WebSocketBroadcastServer
 from src.model import ConnectionState, VoicePacket, WebSocketMessage
 from src.signal import AudioClientSignals
 from .client_window import ClientWindow
@@ -38,6 +38,9 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         self.client_window = ClientWindow(voice_client, self.fsuipc_client)
         self.windows.addWidget(QWidget())
         self.windows.setCurrentIndex(0)
+
+        self.websocket = WebSocketBroadcastServer()
+        signals.broadcast_message.connect(lambda msg: self.websocket.broadcast(msg))
 
         self.receive_timeout_timer = QTimer()
         self.receive_timeout_timer.timeout.connect(self.check_rx_timeout)
@@ -162,6 +165,7 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
             self.label_callsign_v.setText(self.voice_client.client_info.callsign)
             self.log_message("Network", "INFO", f"身份认证通过, 欢迎您, {self.voice_client.client_info.cid:04}")
             if self.voice_client.client_info.is_atc:
+                Thread(target=self.start_websocket, daemon=True).start()
                 self.windows.removeWidget(self.windows.widget(0))
                 self.windows.addWidget(self.controller_window)
                 self.windows.setCurrentIndex(0)
@@ -192,24 +196,24 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
         QMessageBox.critical(self, "无法连接到模拟器", "无法连接到模拟器, 请检查FSUIPC/XPUIPC是否正确安装")
 
     def connect_to_simulator(self):
-        retry = 0
-        max_retry = 12
-        retry_delay = 5
-        while retry < max_retry:
-            res = self.fsuipc_client.open_fsuipc_client()
-            if res.request_status:
-                logger.success("FSUIPC connection established")
-                self.log_message("FSUIPC", "INFO", "FSUIPC连接成功")
-                break
-            logger.error(f"FSUIPC connection failed, {retry + 1}/{max_retry} times")
-            self.log_message("FSUIPC", "ERROR", f"FSUIPC连接失败, 第 {retry + 1}/{max_retry} 次尝试")
-            retry += 1
-            sleep(retry_delay)
-        if retry == max_retry:
-            logger.error(f"FSUIPC connection failed")
-            self.log_message("FSUIPC", "ERROR", "FSUIPC连接失败")
-            self.fsuipc_client_connect_fail.emit()
-            return
+        # retry = 0
+        # max_retry = 12
+        # retry_delay = 5
+        # while retry < max_retry:
+        #     res = self.fsuipc_client.open_fsuipc_client()
+        #     if res.request_status:
+        #         logger.success("FSUIPC connection established")
+        #         self.log_message("FSUIPC", "INFO", "FSUIPC连接成功")
+        #         break
+        #     logger.error(f"FSUIPC connection failed, {retry + 1}/{max_retry} times")
+        #     self.log_message("FSUIPC", "ERROR", f"FSUIPC连接失败, 第 {retry + 1}/{max_retry} 次尝试")
+        #     retry += 1
+        #     sleep(retry_delay)
+        # if retry == max_retry:
+        #     logger.error(f"FSUIPC connection failed")
+        #     self.log_message("FSUIPC", "ERROR", "FSUIPC连接失败")
+        #     self.fsuipc_client_connect_fail.emit()
+        #     return
         self.signals.resize_window.emit(740, 710, True)
         self.fsuipc_client_connected.emit()
 
@@ -224,3 +228,11 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
             f"{datetime.now().strftime('%H:%M:%S')} | {name} | {level.upper()} | {message}")
         cursor = self.text_browser_log.textCursor()
         self.text_browser_log.moveCursor(cursor.MoveOperation.End)
+
+    def start_websocket(self):
+        try:
+            loop = get_running_loop()
+        except RuntimeError:
+            loop = new_event_loop()
+            set_event_loop(loop)
+        loop.run_until_complete(self.websocket.start())

@@ -47,13 +47,21 @@ class ControllerWindow(QWidget, Ui_ControllerWindow):
     def voice_volume_move(self, volume: int):
         if self.main_voice_volume.value() > volume:
             self.main_voice_volume.setValue(volume)
+            self.label_main_voice_volume.setText(f"{self.main_voice_volume.value() / 50:.0%}")
         if self.unicom_voice_volume.value() > volume:
             self.unicom_voice_volume.setValue(volume)
+            self.label_unicom_voice_volume.setText(f"{self.unicom_voice_volume.value() / 50:.0%}")
         if self.emer_voice_volume.value() > volume:
             self.emer_voice_volume.setValue(volume)
+            self.label_emer_voice_volume.setText(f"{self.emer_voice_volume.value() / 50:.0%}")
         if self.custom_voice_volume.value() > volume:
             self.custom_voice_volume.setValue(volume)
+            self.label_custom_voice_volume.setText(f"{self.custom_voice_volume.value() / 50:.0%}")
         self.label_voice_volume.setText(f"{volume / 50:.0%}")
+        self._main_transmitter.volume = self.main_voice_volume.value() * volume / 2500
+        self._unicom_transmitter.volume = self.unicom_voice_volume.value() * volume / 2500
+        self._emer_transmitter.volume = self.emer_voice_volume.value() * volume / 2500
+        self._custom_transmitter.volume = self.custom_voice_volume.value() * volume / 2500
 
     def main_voice_volume_move(self, volume: int):
         if volume > self.voice_volume.value():

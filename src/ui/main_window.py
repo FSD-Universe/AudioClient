@@ -1,8 +1,6 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
 
-from asyncio import get_running_loop, new_event_loop, set_event_loop
-from threading import Thread
 from typing import Optional
 
 from PySide6.QtGui import QScreen
@@ -11,7 +9,7 @@ from loguru import logger
 
 from src.config import config, config_manager
 from src.constants import app_title
-from src.core import VoiceClient, WebSocketBroadcastServer
+from src.core import VoiceClient
 from src.model import ConnectionState
 from src.signal import AudioClientSignals, JoystickSignals, KeyBoardSignals, MouseSignals
 from src.thread import JoystickListenerThread, KeyboardListenerThread, MouseListenerThread
@@ -50,10 +48,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.windows.addWidget(self.loading)
         self.windows.setCurrentIndex(0)
 
-        self.websocket = WebSocketBroadcastServer()
-        signals.broadcast_message.connect(lambda msg: self.websocket.broadcast(msg))
-        Thread(target=self.start_websocket, daemon=True).start()
-
         self.signals = signals
         self.mouse_signals = mouse_signals
         self.keyboard_signals = keyboard_signals
@@ -67,14 +61,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         signals.show_config_windows.connect(self.show_config_window)
         signals.logout_request.connect(self.logout_request)
         signals.resize_window.connect(self.resize_window)
-
-    def start_websocket(self):
-        try:
-            loop = get_running_loop()
-        except RuntimeError:
-            loop = new_event_loop()
-            set_event_loop(loop)
-        loop.run_until_complete(self.websocket.start())
 
     def logout_request(self) -> None:
         if self.voice_client is not None:
