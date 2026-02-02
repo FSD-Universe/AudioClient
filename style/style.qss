@@ -449,6 +449,21 @@ QRadioButton {
 /* 分组框                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* Radio 样式 */
+QRadioButton::indicator {
+    border: 1px solid #6C708C;
+    border-radius: 8px;
+    background: #3A3D4D;
+}
+
+QRadioButton::indicator:checked {
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.6, fx:0.5, fy:0.5, stop:0 #5DADE2, stop:1 #2E8EC6);
+    border-color: #5DADE2;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 分组框                                                                     */
+/* -------------------------------------------------------------------------- */
 QGroupBox {
     border: 1px solid #6C708C;
     border-radius: 10px;
@@ -497,6 +512,42 @@ QTabBar::tab:!selected:hover {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 表格 / 列表 / 树 视图（一致的背景/选中/交替行）                              */
+/* -------------------------------------------------------------------------- */
+QTableView, QListView, QTreeView {
+    background-color: #2C2E3C;
+    color: #E0E0E0;
+    gridline-color: #3A3D4D;
+    border: 1px solid #3A3D4D;
+    selection-background-color: #5DADE2;
+    selection-color: #2C2E3C;
+}
+
+/* 交替行色，轻微差异，保持整体和谐 */
+QTableView::item:alternate, QListView::item:alternate, QTreeView::item:alternate {
+    background: #313344;
+}
+
+/* 表头样式 */
+QHeaderView::section {
+    background-color: #474B61;
+    color: #E0E0E0;
+    padding: 6px;
+    border: 1px solid #6C708C;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 文本编辑器（多行：PlainTextEdit / QTextEdit）                                */
+/* -------------------------------------------------------------------------- */
+QPlainTextEdit, QTextEdit {
+    background-color: #2C2E3C;
+    border: 1px solid #6C708C;
+    border-radius: 6px;
+    color: #E0E0E0;
+    padding: 8px;
+}
+
+/* -------------------------------------------------------------------------- */
 /* 进度条                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -512,3 +563,26 @@ QProgressBar::chunk {
     background-color: #5DADE2;
     border-radius: 4px;
 }
+
+/* -------------------------------------------------------------------------- */
+/* 其它增强（小控件、状态、可访问性）                                          */
+/* -------------------------------------------------------------------------- */
+QSpinBox, QDoubleSpinBox {
+    background-color: #474B61;
+    border: 1px solid #6C708C;
+    color: #E0E0E0;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+QToolBar {
+    background: transparent;
+    border: none;
+}
+
+/* 一致的禁用样式 */
+*:disabled {
+    color: #A0A0A0;
+}
+
+/* 结束 -------------------------------------------------------------------- */
