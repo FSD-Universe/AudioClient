@@ -6,26 +6,28 @@ from urllib.parse import urljoin
 from PySide6.QtWidgets import QMessageBox, QWidget
 from loguru import logger
 
-from .form import Ui_LoginWindow
 from src.config import config, config_manager
-from src.utils import http
-from src.signal import AudioClientSignals
 from src.core import VoiceClient
-from src.utils import get_line_edit_data
-from ..model import UserLoginRequest, UserLoginResponse
+from src.model import UserLoginRequest, UserLoginResponse
+from src.signal import AudioClientSignals
+from src.utils import get_line_edit_data, http
+from .form import Ui_LoginWindow
 
 
 class LoginWindow(QWidget, Ui_LoginWindow):
-    def __init__(self, voice_client: VoiceClient, signals: AudioClientSignals):
+    def __init__(self, signals: AudioClientSignals, voice_client: VoiceClient):
         super().__init__()
         self.setupUi(self)
-        self.button_login.clicked.connect(self.login)
-        self.check_box_remember_me.clicked.connect(self.remember_me_change)
-        config_manager.on_config_save(self.update_config_data)
-        self.update_config_data()
+
         self.voice_client = voice_client
         self.signals = signals
+
+        self.button_login.clicked.connect(self.login)
+        self.check_box_remember_me.clicked.connect(self.remember_me_change)
         self.button_settings.clicked.connect(lambda: signals.show_config_windows.emit())
+
+        config_manager.on_config_save(self.update_config_data)
+        self.update_config_data()
 
     def update_config_data(self) -> bool:
         if config.account.remember_me:
@@ -60,21 +62,15 @@ class LoginWindow(QWidget, Ui_LoginWindow):
 
         if response.status_code != 200:
             logger.error(f"Login failed with status code {response.status_code}")
-            try:
-                QMessageBox.critical(self, "登陆失败", response.json().get("message"))
-            except Exception as _:
-                QMessageBox.critical(self, "登陆失败", "发生未知错误")
+            QMessageBox.critical(self, "登陆失败", response.json().get("message", "发生未知错误"))
             return
 
         data = UserLoginResponse.model_validate_json(response.content).data
 
-        self.voice_client.client_info.cid = data.user.cid
-        self.voice_client.client_info.jwt_token = data.token
-        self.voice_client.client_info.flush_token = data.flush_token
-        self.voice_client.client_info.user = data.user
+        self.voice_client.update_client_info(data)
 
         logger.success(f"Logged in successfully")
-        logger.trace(f"Logged in as {data.user.username}({data.user.cid:04}), token={data.token}")
+        logger.trace(f"Logged in as {data.user.username}({data.user.cid:04}), token={data.token[:80]}...")
 
         self.remember_me_change(self.check_box_remember_me.isChecked())
         self.signals.login_success.emit()

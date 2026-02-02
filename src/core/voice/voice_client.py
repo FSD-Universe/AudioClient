@@ -7,12 +7,13 @@ from typing import Union
 from PySide6.QtCore import QObject, QTimer
 from loguru import logger
 
-from .network_handler import NetworkHandler
-from .audio_handler import AudioHandler
-from .transmitter import Transmitter
 from src.constants import default_frame_time, default_frame_time_s
+from src.model import ClientInfo, ConnectionState, ControlMessage, MessageType, UserLoginModel, VoicePacket, \
+    VoicePacketBuilder
 from src.signal import AudioClientSignals
-from src.model import ConnectionState, ControlMessage, MessageType, VoicePacket, VoicePacketBuilder, ClientInfo
+from .audio_handler import AudioHandler
+from .network_handler import NetworkHandler
+from .transmitter import Transmitter
 
 
 # 语音客户端
@@ -77,6 +78,12 @@ class VoiceClient(QObject):
         self._audio.cleanup()
         self._transmitters.clear()
         self.client_info.clear()
+
+    def update_client_info(self, data: UserLoginModel):
+        self.client_info.cid = data.user.cid
+        self.client_info.jwt_token = data.token
+        self.client_info.flush_token = data.flush_token
+        self.client_info.user = data.user
 
     def add_transmitter(self, transmitter: Transmitter):
         self._transmitters[transmitter.id] = transmitter
