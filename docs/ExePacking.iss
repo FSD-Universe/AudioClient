@@ -4,7 +4,7 @@
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "AudioClient"
-#define MyAppVersion "0.2.0"
+#define MyAppVersion "1.0.1"
 #define AppCopyright "Copyright © 2025-2026 Half_nothing"
 #define MyAppPublisher "Half_nothing"
 #define MyAppPublisherURL "https://www.half-nothing.cn/"
@@ -45,7 +45,8 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "..\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\config.yaml"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
@@ -58,7 +59,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppName}.exe"; Tasks: d
 Filename: "{app}\{#MyAppName}.exe"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: files; Name: "{app}\libfsuipc.dll"
 Type: files; Name: "{app}\{#MyAppName}.exe"
+Type: files; Name: "{app}\config.yaml"
 Type: filesandordirs; Name: "{app}\logs"
-Type: filesandordirs; Name: "{app}\config"
+Type: filesandordirs; Name: "{app}\lib"

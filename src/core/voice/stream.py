@@ -128,6 +128,21 @@ class OutputAudioSteam(AudioStream):
         self._frame_size = 0
         self._volume = 1.0
 
+    @property
+    def frame_size(self) -> int:
+        return self._frame_size
+
+    def enqueue_conflict_wave(self, wave: NDArray[float32]) -> None:
+        """将一段已经生成好的浮点波形送入冲突队列播放。"""
+        if not self._active or self._frame_size <= 0:
+            return
+        if wave.size == 0:
+            return
+        try:
+            self._conflict_queue.put_nowait(wave.astype(float32))
+        except Full:
+            logger.warning("Output conflict queue full, dropping beep")
+
     def play_encoded_audio(self, encoded_data: bytes, conflict: bool = False, volume: float = 1.0):
         self._volume = volume
         if conflict:

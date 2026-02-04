@@ -103,7 +103,7 @@ class ConnectWindow(QWidget, Ui_ConnectWindow):
     def check_tx_timeout(self):
         if not self.button_tx.is_active:
             return
-        if time() - self.last_data_send < default_frame_time_s:
+        if time() - self.last_data_send < default_frame_time_s * 4:
             return
         self.button_tx.set_active(False)
         if self.voice_client.client_info.is_atc:

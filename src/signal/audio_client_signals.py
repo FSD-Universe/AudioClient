@@ -57,3 +57,5 @@ class AudioClientSignals(QObject):
     audio_output_device_change = Signal(DeviceInfo)
     # emit when ptt button pressed or released
     ptt_status_change = Signal(bool)
+    # emit when need to play ptt beep (True=press, False=release)
+    ptt_beep = Signal(bool)

@@ -119,6 +119,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.joystick_signals.button_pressed.connect(self.ptt_button.key_pressed)
         self.joystick_signals.button_released.connect(self.ptt_button.key_released)
         self.ptt_button.ptt_pressed.connect(lambda x: self.signals.ptt_status_change.emit(x))
+        # 使用同一个状态信号驱动提示音（由 AudioHandler 在用户选择的输出设备上播放）
+        self.ptt_button.ptt_pressed.connect(lambda x: self.signals.ptt_beep.emit(x))
         self.signals.connection_state_changed.connect(self.handle_connect_status_change)
 
         self.menubar.setVisible(True)

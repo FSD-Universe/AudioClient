@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .utils.version import Version
 
-config_version: Version = Version([1, 0, 0])
+config_version: Version = Version([1, 0, 1])
 config_file: Path = Path.cwd() / "config.yaml"
 app_version: Version = Version([1, 0, 0])
 app_name: str = "AudioClient"
