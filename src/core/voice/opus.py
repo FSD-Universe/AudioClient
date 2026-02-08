@@ -1,5 +1,6 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
+"""Opus 编解码与流参数：SteamArgs、OpusDecoder、OpusEncoder。"""
 
 from dataclasses import dataclass
 from typing import Optional
@@ -13,13 +14,13 @@ from src.constants import default_frame_size, opus_default_bitrate, opus_default
 
 @dataclass
 class SteamArgs:
+    """音频流参数：采样率、声道数、设备索引、帧大小。"""
     sample_rate: int
     channel: int
     device_index: Optional[int]
     frame_size: int
 
 
-# Opus解码器
 class OpusDecoder:
     def __init__(self, args: SteamArgs):
         self._frame_size: int = 0
@@ -48,8 +49,9 @@ class OpusDecoder:
             self._decoder = None
 
 
-# Opus编码器
 class OpusEncoder:
+    """Opus 编码器：将麦克风 PCM 编码为 Opus 字节流用于发送。"""
+
     def __init__(self, args: SteamArgs):
         self._frame_size: int = 0
         self._encoder: Optional[Encoder] = None

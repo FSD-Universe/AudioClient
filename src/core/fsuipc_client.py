@@ -1,5 +1,9 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
+"""
+FSUIPC 客户端：通过 libfsuipc 与飞行模拟器通信，读写 COM 频率与连接状态。
+依赖 lib/libfsuipc.dll，使用 ctypes 调用 C 接口。
+"""
 from collections.abc import Callable
 from ctypes import POINTER, Structure, c_bool, c_char_p, c_int32, c_uint16, c_uint32, c_uint8, cast, cdll
 from dataclasses import dataclass
@@ -11,6 +15,7 @@ _simulator_name: dict[str, list[str]] = {
 
 
 class CBaseModel(Structure):
+    """C 层通用返回结构：请求状态与错误信息。"""
     _fields_ = [
         ("requestStatus", c_bool),
         ("errMessage", c_char_p)
@@ -18,6 +23,7 @@ class CBaseModel(Structure):
 
 
 class CConnectionStatus(Structure):
+    """C 层连接状态结构。"""
     _fields_ = [
         ("requestStatus", c_bool),
         ("errMessage", c_char_p),
@@ -26,6 +32,7 @@ class CConnectionStatus(Structure):
 
 
 class CFrequencies(Structure):
+    """C 层频率信息：COM1/COM2 等频率及接收标志。"""
     _fields_ = [
         ("requestStatus", c_bool),
         ("errMessage", c_char_p),
@@ -35,6 +42,7 @@ class CFrequencies(Structure):
 
 
 class CVersion(Structure):
+    """C 层版本信息：模拟器类型、FSUIPC 版本等。"""
     _fields_ = [
         ("requestStatus", c_bool),
         ("errMessage", c_char_p),
@@ -46,6 +54,7 @@ class CVersion(Structure):
 
 @dataclass
 class BaseModel:
+    """FSUIPC 调用返回的通用字段。"""
     request_status: bool
     err_message: str
 
@@ -57,6 +66,7 @@ class ConnectionStatus(BaseModel):
 
 @dataclass
 class Frequencies(BaseModel):
+    """COM 频率与接收标志，含 com1_rx/com2_rx 等解析属性。"""
     frequency_flag: int
     frequency: list[int]
 
@@ -71,6 +81,7 @@ class Frequencies(BaseModel):
 
 @dataclass
 class Version(BaseModel):
+    """FSUIPC/模拟器版本信息，含 version、simulator_name 等属性。"""
     simulator_type: int
     fsuipc_version: int
     api_version: int
@@ -97,8 +108,9 @@ class Version(BaseModel):
         return _simulator_name[locale][self.simulator_type]
 
 
-# FSUIPC客户端封装
 class FSUIPCClient:
+    """FSUIPC 客户端封装：加载 DLL，提供打开/关闭、读频率、设 COM 频率等接口。"""
+
     def __init__(self, fsuipc_lib_path: Path) -> None:
         fsuipc_lib = cdll.LoadLibrary(str(fsuipc_lib_path.resolve()))
         fsuipc_lib.OpenFSUIPCClient.restype = POINTER(CVersion)
@@ -208,10 +220,12 @@ class FSUIPCClient:
         return base_model
 
     def _get_function(self, function_name: str) -> Callable:
+        """按名称获取 DLL 中的函数。"""
         if not hasattr(self._fsuipc_lib, function_name):
             raise AttributeError(f"Function {function_name} not available")
         return getattr(self._fsuipc_lib, function_name)
 
     def _free_memory(self, pointer) -> None:
+        """释放 DLL 返回的指针，避免内存泄漏。"""
         base_ptr = cast(pointer, POINTER(CBaseModel))
         self._fsuipc_lib.FreeMemory(base_ptr)

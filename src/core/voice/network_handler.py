@@ -1,5 +1,6 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
+"""语音网络层：TCP 信令（连接、SWITCH、PING/PONG 等）+ UDP 语音包收发。"""
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
 from struct import unpack
 from threading import Thread
@@ -14,8 +15,9 @@ from src.model import ClientInfo, ControlMessage, MessageType, VoicePacket, Voic
 from src.signal import AudioClientSignals
 
 
-# 网络处理器
 class NetworkHandler(QObject):
+    """TCP 信令 + UDP 语音：连接后发 JWT，TCP 按行解析 ControlMessage，UDP 解析 VoicePacket 并 emit。"""
+
     def __init__(self, signals: AudioClientSignals, client_info: ClientInfo):
         super().__init__()
 

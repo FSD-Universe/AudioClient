@@ -1,14 +1,13 @@
 #  Copyright (c) 2026 Half_nothing
 #  SPDX-License-Identifier: MIT
+"""正弦波生成器：用于 PTT 提示音、冲突音等固定频率短音。"""
 
 from numpy import arange, float32, pi, sin, zeros
 from numpy.typing import NDArray
 
 
 class ToneGenerator:
-    """
-    正弦波生成器
-    """
+    """正弦波生成器：预计算单周期波形，按帧输出，支持动态改频率/采样率/振幅。"""
 
     def __init__(self, sample_rate: int = 44100, frequency: float = 293.66, amplitude: float = 0.3):
         self.sample_rate = sample_rate

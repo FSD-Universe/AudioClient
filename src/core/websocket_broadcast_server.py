@@ -1,6 +1,8 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
-
+"""
+WebSocket 广播服务：供 ADF 等插件连接，接收并广播状态消息（如频率、PTT 等）。
+"""
 from asyncio import get_running_loop, new_event_loop, set_event_loop
 from typing import Optional
 
@@ -13,12 +15,14 @@ from src.model import WebSocketMessage
 
 
 class ClientInfo(BaseModel):
+    """单个 WebSocket 连接的信息。"""
     client_id: int
     address: str
 
 
-# ADF插件
 class WebSocketBroadcastServer:
+    """WebSocket 服务端：仅接受 /ws 路径，维护连接集合并向所有客户端广播消息。"""
+
     def __init__(self, host: str = '0.0.0.0', port: int = 49080):
         self.server: Optional[Server] = None
         self.host = host

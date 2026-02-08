@@ -1,6 +1,8 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
-
+"""
+音频处理器：统一管理麦克风输入、耳机/扬声器双路混合输出、PTT 提示音、冲突音、设备测试与设备切换。
+"""
 from typing import Callable, Optional
 
 from PySide6.QtCore import QTimer, Qt
@@ -19,10 +21,9 @@ from .tone_generator import ToneGenerator
 from .transmitter import Transmitter
 
 
-# 音频处理器
-# 捕获音频，使用Opus编码并输出
-# 获取音频流，使用Opus解码并播放
 class AudioHandler:
+    """管理输入流、双路混合输出（耳机/扬声器）、PTT 提示音、冲突音音量、设备测试；按 transmitter.output_target 路由播放。"""
+
     def __init__(self, audio_signal: AudioClientSignals):
         self._input_args = SteamArgs(default_sample_rate, default_channels, None, default_frame_size)
         self._output_args = SteamArgs(default_sample_rate, default_channels, None, default_frame_size)
@@ -161,6 +162,7 @@ class AudioHandler:
             self._mixed_output_speaker.restart(self._output_args_speaker)
 
     def _stream_for_target(self, output_target: str) -> MixedOutputAudioStream:
+        """按输出目标返回对应混合流。"""
         return self._mixed_output_headphone if output_target == "headphone" else self._mixed_output_speaker
 
     def add_transmitter(self, transmitter: Transmitter):

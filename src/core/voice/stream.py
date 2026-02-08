@@ -1,9 +1,11 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
-
+"""
+音频流：麦克风输入流、单路输出流、多路混合输出流。
+输入流编码为 Opus；输出流解码并可选重采样，支持冲突音/提示音插入。
+"""
 from abc import ABC, abstractmethod
 from queue import Empty, Full, Queue
-from threading import current_thread
 from typing import Callable, Optional
 
 from loguru import logger
@@ -12,10 +14,10 @@ from numpy.typing import NDArray
 from pyaudio import PyAudio, Stream, paContinue, paFloat32, paInt16
 from soxr import resample  # type: ignore
 
+from src.config import config
 from src.constants import default_sample_rate, opus_default_sample_rate
 from .opus import OpusDecoder, OpusEncoder, SteamArgs
 from .tone_generator import ToneGenerator
-from ...config import config
 
 
 def _resample_to_output(
@@ -41,6 +43,8 @@ def _resample_to_output(
 
 
 class AudioStream(ABC):
+    """音频流基类：封装 PyAudio 流与 active 状态，子类实现 start/stop。"""
+
     def __init__(self, audio: PyAudio):
         self._audio = audio
         self._stream: Optional[Stream] = None
@@ -65,6 +69,8 @@ class AudioStream(ABC):
 
 
 class InputAudioSteam(AudioStream):
+    """麦克风输入流：回调内重采样、增益后 Opus 编码，通过 on_encoded_audio 送出。"""
+
     def __init__(self, audio: PyAudio, encoder: OpusEncoder,
                  on_encoded_audio: Optional[Callable[[bytes], None]] = None):
         super().__init__(audio)
@@ -143,6 +149,8 @@ class InputAudioSteam(AudioStream):
 
 
 class OutputAudioSteam(AudioStream):
+    """单路播放流：队列接收编码数据或冲突波形，回调中解码/重采样后输出。"""
+
     def __init__(self, audio: PyAudio, decoder: OpusDecoder):
         super().__init__(audio)
         self._decoder = decoder
@@ -158,7 +166,7 @@ class OutputAudioSteam(AudioStream):
 
     def play_conflict(self, volume: float):
         try:
-            self._conflict_queue.put_nowait(self._generator.generate_frame(self._frame_size) * volume)
+            self._conflict_queue.put_nowait(self._generator.generate_frame(self._frame_size) * self._volume * volume)
         except Full:
             return
 
@@ -174,9 +182,10 @@ class OutputAudioSteam(AudioStream):
             logger.warning("Output conflict queue full, dropping beep")
 
     def play_encoded_audio(self, encoded_data: bytes, conflict: bool = False, volume: float = 1.0):
+        """放入一帧编码数据或冲突音；冲突时仅播放冲突音。"""
         self._volume = volume
         if conflict:
-            self.play_conflict()
+            self.play_conflict(config.audio.conflict_volume)
             return
         try:
             self._queue.put_nowait(encoded_data)
@@ -266,10 +275,12 @@ class MixedOutputAudioStream(AudioStream):
         return self._frame_size
 
     def add_transmitter(self, transmitter_id: int) -> None:
+        """为该发射机分配一路队列。"""
         if transmitter_id not in self._transmitter_queues:
             self._transmitter_queues[transmitter_id] = Queue()
 
     def remove_transmitter(self, transmitter_id: int) -> None:
+        """移除该发射机的队列（切换输出设备时用）。"""
         self._transmitter_queues.pop(transmitter_id, None)
 
     def enqueue_conflict_wave(self, wave: NDArray[float32]) -> None:
@@ -280,13 +291,9 @@ class MixedOutputAudioStream(AudioStream):
         except Full:
             logger.warning("Mixed output conflict queue full, dropping")
 
-    def play_encoded_audio(
-            self,
-            transmitter_id: int,
-            encoded_data: bytes,
-            conflict: bool = False,
-            volume: float = 1.0,
-    ) -> None:
+    def play_encoded_audio(self, transmitter_id: int, encoded_data: bytes,
+                           conflict: bool = False, volume: float = 1.0) -> None:
+        """将一帧数据送入对应 transmitter 队列；冲突时生成冲突音送入冲突队列。"""
         if not self._active or self._frame_size <= 0:
             return
         if transmitter_id not in self._transmitter_queues:

@@ -1,6 +1,9 @@
 #  Copyright (c) 2025-2026 Half_nothing
 #  SPDX-License-Identifier: MIT
-
+"""
+语音客户端：维护本机 transmitter 列表与频率索引，处理信令与语音包，
+将收到的语音按 packet.frequency 路由到对应 transmitter 播放。
+"""
 from time import time
 
 from PySide6.QtCore import QObject
@@ -15,8 +18,9 @@ from .network_handler import NetworkHandler
 from .transmitter import Transmitter
 
 
-# 语音客户端
 class VoiceClient(QObject):
+    """语音业务入口：网络 + 音频，管理 transmitter、频率索引、当前发送通道与冲突判定。"""
+
     def __init__(self, signals: AudioClientSignals):
         super().__init__()
 
@@ -75,6 +79,7 @@ class VoiceClient(QObject):
         self.client_info.user = data.user
 
     def _rebuild_frequency_index(self) -> None:
+        """按频率重建索引（后端限制同用户同频仅一台 transmitter）。"""
         self._transmitters_by_frequency = {
             tx.frequency: tx for tx in self._transmitters.values() if tx.frequency != 0
         }
