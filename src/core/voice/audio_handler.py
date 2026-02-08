@@ -89,12 +89,12 @@ class AudioHandler:
 
     def _ptt_beep(self, pressed: bool) -> None:
         tone = self._ptt_press_tone if pressed else self._ptt_release_tone
-        if self._input_stream.active:
-            wave = tone.generate_frame(self._mixed_output_headphone.frame_size) * 0.5 * self._beep_volume
-            self._mixed_output_headphone.enqueue_conflict_wave(wave)
-        else:
+        if self._device_tester.active:
             wave = tone.generate_frame(self._device_tester.output_stream.frame_size) * 0.5 * self._beep_volume
             self._device_tester.output_stream.enqueue_conflict_wave(wave)
+            return
+        wave = tone.generate_frame(self._mixed_output_headphone.frame_size) * 0.5 * self._beep_volume
+        self._mixed_output_headphone.enqueue_conflict_wave(wave)
 
     def _test_audio_device(self, state: bool, target: str):
         if state:

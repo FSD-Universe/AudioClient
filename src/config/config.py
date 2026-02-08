@@ -61,15 +61,8 @@ class Config(BaseModel):
             with open(config_file, "w", encoding="utf-8") as f:
                 safe_dump(c.model_dump(), f)
             return c
-        f = open(config_file, "r", encoding="utf-8")
-        c = Config.model_validate(safe_load(f))
-        f.close()
-        match config_version.check_version(Version(c.version)):
-            case VersionType.MAJOR_UNMATCH | VersionType.MINOR_UNMATCH:
-                logger.critical(f"Config version error! Require {config_version} but got {c.version}")
-                exit(0)
-            case VersionType.PATCH_UNMATCH:
-                logger.warning(f"Config version not match! Require {config_version} but got {c.version}")
+        with config_file.open("r", encoding="utf-8") as f:
+            c = Config.model_validate(safe_load(f))
         return c
 
 
@@ -79,6 +72,13 @@ type SaveCallback = Callable[[], bool]
 class ConfigManager:
     def __init__(self):
         self.config = Config.load_config()
+        match config_version.check_version(Version(self.config.version)):
+            case VersionType.MAJOR_UNMATCH | VersionType.MINOR_UNMATCH:
+                logger.critical(f"Config version error! Require {config_version} but got {self.config.version}")
+                self.config.version = config_version.version
+                self.save()
+            case VersionType.PATCH_UNMATCH:
+                logger.warning(f"Config version not match! Require {config_version} but got {self.config.version}")
         self._save_callbacks: list[SaveCallback] = []
 
     def register_save_callback(self, callback: SaveCallback) -> None:

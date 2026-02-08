@@ -24,6 +24,7 @@ def get_device_info(host_api: int) -> tuple[dict[str, DeviceInfo], dict[str, Dev
     for i in range(device_count):
         dev_info = DeviceInfo.model_validate(p.get_device_info_by_index(i))
         if dev_info.hostApi == host_api:
+            dev_info.fix_name()
             device_infos.append(dev_info)
     p.terminate()
     input_devices: dict[str, DeviceInfo] = {}

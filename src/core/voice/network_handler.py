@@ -81,6 +81,7 @@ class NetworkHandler(QObject):
             self._show_log_message("INFO", "连接服务器成功")
             self._empty_voice_packet = VoicePacketBuilder.build_packet(self._client_info.cid, 0, 0,
                                                                        self._client_info.callsign, b"")
+            self.send_voice_packet(self._empty_voice_packet)
             self._heartbeat_timer.start()
         except Exception as e:
             self._log_message("ERROR", f"Failed to connect to server")

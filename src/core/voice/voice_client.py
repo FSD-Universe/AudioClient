@@ -2,7 +2,6 @@
 #  SPDX-License-Identifier: MIT
 
 from time import time
-from typing import Union
 
 from PySide6.QtCore import QObject
 from loguru import logger
@@ -27,9 +26,10 @@ class VoiceClient(QObject):
         self._connection_state = ConnectionState.DISCONNECTED
         self._network = NetworkHandler(signals, self.client_info)
         self._audio = AudioHandler(signals)
-        self._transmitters: dict[int, Transmitter] = {}
-        self._last_receive: dict[int, tuple[str, float]] = {}
-        self._current_transmitter = -1
+        self._transmitters: dict[int, Transmitter] = {}  # id -> transmitter
+        self._transmitters_by_frequency: dict[int, Transmitter] = {}  # frequency -> transmitter（后端限制同用户同频仅一台）
+        self._last_receive: dict[int, tuple[str, float]] = {}  # frequency -> (callsign, time)
+        self._current_transmitter_id = -1
         self._sending = False
 
         self._audio.on_encoded_audio = self._send_voice_data
@@ -62,9 +62,10 @@ class VoiceClient(QObject):
 
     def disconnect_from_server(self):
         self._network.disconnect_from_server()
-        self._current_transmitter = -1
+        self._current_transmitter_id = -1
         self._audio.cleanup()
         self._transmitters.clear()
+        self._transmitters_by_frequency.clear()
         self.client_info.clear()
 
     def update_client_info(self, data: UserLoginModel):
@@ -73,9 +74,15 @@ class VoiceClient(QObject):
         self.client_info.flush_token = data.flush_token
         self.client_info.user = data.user
 
+    def _rebuild_frequency_index(self) -> None:
+        self._transmitters_by_frequency = {
+            tx.frequency: tx for tx in self._transmitters.values() if tx.frequency != 0
+        }
+
     def add_transmitter(self, transmitter: Transmitter):
         self._transmitters[transmitter.id] = transmitter
         self._audio.add_transmitter(transmitter)
+        self._rebuild_frequency_index()
         if transmitter.frequency == 0:
             return
         self.update_transmitter(transmitter)
@@ -83,27 +90,21 @@ class VoiceClient(QObject):
     def set_transmitter_output_target(self, transmitter: Transmitter) -> None:
         self._audio.set_transmitter_output_target(transmitter)
 
-    def remove_transmitter(self, transmitter_id: int):
-        del self._transmitters[transmitter_id]
-
-    def update_transmitter(self, transmitter: Union[Transmitter, int]):
+    def update_transmitter(self, transmitter: Transmitter):
         if not self.client_ready:
             return
 
-        if isinstance(transmitter, int):
-            if transmitter >= len(self._transmitters):
-                raise ValueError("Invalid transmitter id")
-            transmitter = self._transmitters[transmitter]
-        elif not isinstance(transmitter, Transmitter):
+        if not isinstance(transmitter, Transmitter):
             raise ValueError("Invalid transmitter")
 
+        self._rebuild_frequency_index()
         frequency = transmitter.frequency
         rx = transmitter.receive_flag
         transmitter_id = transmitter.id
 
         if transmitter.send_flag:
             self.signals.update_current_frequency.emit(frequency)
-            self._current_transmitter = transmitter_id
+            self._current_transmitter_id = transmitter_id
 
         message = ControlMessage(
             type=MessageType.SWITCH,
@@ -133,10 +134,10 @@ class VoiceClient(QObject):
             self.signals.connection_state_changed.emit(state)
 
     def _send_voice_data(self, encoded_data: bytes):
-        if not self.client_ready or self._current_transmitter == -1:
+        if not self.client_ready or self._current_transmitter_id == -1:
             return
 
-        transmitter = self._transmitters.get(self._current_transmitter, None)
+        transmitter = self._transmitters.get(self._current_transmitter_id, None)
         if transmitter is None:
             return
 
@@ -179,7 +180,8 @@ class VoiceClient(QObject):
             conflict = True
         else:
             self._last_receive[packet.frequency] = (packet.callsign, time())
-        transmitter = self._transmitters.get(packet.transmitter, None)
+        # 服务端转发的是发送方原始数据，packet.transmitter 是发送方 id；用频率索引 O(1) 查找本机 transmitter
+        transmitter = self._transmitters_by_frequency.get(packet.frequency)
         if transmitter is None:
             return
         self._audio.play_encoded_audio(transmitter, packet.data, conflict)
@@ -192,6 +194,7 @@ class VoiceClient(QObject):
 
     def clear(self):
         self._transmitters.clear()
+        self._transmitters_by_frequency.clear()
         self._audio.cleanup()
         self._network.disconnect_from_server()
 

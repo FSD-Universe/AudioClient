@@ -1,4 +1,4 @@
-; *** Inno Setup Script for ArkPets ***
+; *** Inno Setup Script for AudioClient ***
 ; This script is based on Inno Setup 6, a free installer for Windows programs.
 ; Documentation: https://jrsoftware.org/ishelp.php
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
