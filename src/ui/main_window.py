@@ -5,11 +5,11 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QScreen
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
 from loguru import logger
 
 from src.config import config, config_manager
-from src.constants import app_title
+from src.constants import app_name, app_title
 from src.core import VoiceClient
 from src.model import ConnectionState
 from src.signal import AudioClientSignals, JoystickSignals, KeyBoardSignals, MouseSignals
@@ -60,6 +60,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.initialize_complete, Qt.ConnectionType.QueuedConnection
         )
         self.action_settings.triggered.connect(self.show_config_window)
+        self.action_about.triggered.connect(self.show_about)
+        self.action_about_qt.triggered.connect(self.show_about_qt)
         signals.show_config_windows.connect(self.show_config_window)
         signals.logout_request.connect(self.logout_request)
         signals.resize_window.connect(self.resize_window)
@@ -164,6 +166,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.setWindowTitle(f"{app_title} - 认证中")
             case ConnectionState.READY:
                 self.setWindowTitle(f"{app_title} - 已就绪")
+
+    def show_about(self) -> None:
+        from src.constants import app_version, organization_name, organization_website
+        QMessageBox.about(
+            self,
+            "关于",
+            f"<h3>{app_name}</h3>"
+            f"<p>版本 {app_version.version}</p>"
+            f"<p>{organization_name}<br/>"
+            f"<a href=\"{organization_website}\">{organization_website}</a></p>"
+            f"<p>基于 PySide6 的语音客户端，支持管制员与飞行员双角色。</p>"
+            f"<p>Copyright © 2025-2026 Half_nothing<br/>MIT License</p>"
+        )
+
+    def show_about_qt(self) -> None:
+        QMessageBox.aboutQt(self, "关于 Qt")
 
     def show_config_window(self) -> None:
         if self.config is None:
