@@ -4,7 +4,7 @@
 ; Download Inno Setup: https://jrsoftware.org/isdl.php
 
 #define MyAppName "AudioClient"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.2.2"
 #define AppCopyright "Copyright © 2025-2026 Half_nothing"
 #define MyAppPublisher "Half_nothing"
 #define MyAppPublisherURL "https://www.half-nothing.cn/"
@@ -45,7 +45,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\dist\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\dist\config.yaml"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\config.yaml"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

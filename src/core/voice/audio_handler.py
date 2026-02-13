@@ -11,7 +11,7 @@ from pyaudio import PyAudio
 
 from src.config import config
 from src.constants import default_channels, default_frame_size, default_frame_time, default_sample_rate, \
-    opus_default_sample_rate
+    max_stream_channels, opus_default_sample_rate
 from src.model import DeviceInfo
 from src.signal import AudioClientSignals
 from .audio_device_tester import AudioDeviceTester
@@ -126,7 +126,7 @@ class AudioHandler:
             info = DeviceInfo.model_validate(self._audio.get_default_input_device_info())
         logger.debug(f"AudioHandler > input device change: {info}")
         self._input_args.device_index = info.index
-        self._input_args.channel = max(info.maxInputChannels // 2, default_channels)
+        self._input_args.channel = min(max(info.maxInputChannels // 2, default_channels), max_stream_channels)
         self._input_args.sample_rate = int(info.defaultSampleRate)
         self._input_args.frame_size = int(
             default_frame_size * self._input_args.sample_rate / opus_default_sample_rate
@@ -142,11 +142,11 @@ class AudioHandler:
             info = DeviceInfo.model_validate(self._audio.get_default_output_device_info())
         logger.debug(f"AudioHandler > output device (headphone) change: {info}")
         self._output_args.device_index = info.index
-        self._output_args.channel = max(info.maxOutputChannels // 2, default_channels)
+        self._output_args.channel = min(max(info.maxOutputChannels // 2, default_channels), max_stream_channels)
         self._output_args.sample_rate = int(info.defaultSampleRate)
         self._output_args.frame_size = int(
             default_frame_size * self._output_args.sample_rate / opus_default_sample_rate
-        ) * self._input_args.channel
+        ) * self._output_args.channel
         self._decoder.update(self._output_args)
         self._ptt_press_tone.update_sample_rate(self._output_args.sample_rate)
         self._ptt_release_tone.update_sample_rate(self._output_args.sample_rate)
@@ -161,7 +161,7 @@ class AudioHandler:
             info = DeviceInfo.model_validate(self._audio.get_default_output_device_info())
         logger.debug(f"AudioHandler > output device (speaker) change: {info}")
         self._output_args_speaker.device_index = info.index
-        self._output_args_speaker.channel = max(info.maxOutputChannels // 2, default_channels)
+        self._output_args_speaker.channel = min(max(info.maxOutputChannels // 2, default_channels), max_stream_channels)
         self._output_args_speaker.sample_rate = int(info.defaultSampleRate)
         self._output_args_speaker.frame_size = int(
             default_frame_size * self._output_args_speaker.sample_rate / opus_default_sample_rate
